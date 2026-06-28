@@ -64,13 +64,25 @@ b { color: var(--text); font-weight: 700; }
 .dot.amber { background: var(--amber); }
 .dot.green { background: var(--green); }
 .dot.pulse { animation: pulse 1.2s ease-in-out infinite; }
-/* the traffic-light dots are real controls */
+/* the traffic-light dots are real controls (macOS style) */
+.traffic { display: inline-flex; align-items: center; gap: 8px; }
 button.dot {
+  position: relative;
   padding: 0; border: none; cursor: pointer;
-  transition: transform .1s, filter .1s;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: filter .1s;
 }
-button.dot:hover { transform: scale(1.18); filter: brightness(1.2); }
-button.dot:active { transform: scale(.92); }
+button.dot::before {
+  font-size: 9px; font-weight: 700; line-height: 1;
+  color: rgba(0, 0, 0, .55);
+  opacity: 0; transition: opacity .12s;
+}
+/* glyphs reveal when hovering anywhere over the cluster, like macOS */
+.traffic:hover button.dot::before { opacity: 1; }
+button.dot:active { filter: brightness(.8); }
+#winClose::before { content: "\00d7"; }  /* × */
+#winMin::before   { content: "\2013"; }  /* – */
+#winMax::before   { content: "+"; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 .term-title {
   margin-left: 6px;
@@ -320,6 +332,7 @@ input[type="range"] { flex: 1; accent-color: var(--cyan); height: 4px; }
 }
 
 /* launcher icon shown while minimized/closed */
+.launcher[hidden] { display: none; }   /* author display:flex would otherwise beat [hidden] */
 .launcher {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 60;

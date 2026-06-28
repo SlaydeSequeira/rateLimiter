@@ -249,6 +249,45 @@ $("launcher").onclick = restoreApp;
 /* ---- request log show / hide ---- */
 $("logBtn").onclick = () => $("grid").classList.toggle("no-log");
 
+/* ---- copy a ready-to-run curl for the current settings ---- */
+function currentCurl() {
+  const windowSec = cfg.refill > 0 ? cfg.capacity / cfg.refill : 60;
+  const body = JSON.stringify({
+    clientId: cfg.clientId,
+    cost: cfg.cost,
+    policy: {
+      algorithm: cfg.algo,
+      capacity: cfg.capacity,
+      refillRatePerSec: cfg.refill,
+      limit: cfg.capacity,
+      windowSec
+    }
+  });
+  return `curl -X POST ${cfg.base}/v1/check \\\n` +
+         `  -H 'content-type: application/json' \\\n` +
+         `  -H 'x-api-key: ${cfg.apiKey}' \\\n` +
+         `  -d '${body}'`;
+}
+$("copyCurl").onclick = async () => {
+  const curl = currentCurl();
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(curl);
+    copied = true;
+  } catch (_) {
+    // fallback for non-secure contexts / older browsers
+    const ta = document.createElement("textarea");
+    ta.value = curl; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { copied = document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  const b = $("copyCurl"), label = b.textContent;
+  b.textContent = copied ? "✓ copied" : "⧉ copy failed";
+  b.disabled = true;
+  setTimeout(() => { b.textContent = label; b.disabled = false; }, 1300);
+};
+
 let autoTimer = null;
 $("auto").onclick = () => {
   if (autoTimer) {

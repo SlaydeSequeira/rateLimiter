@@ -14,9 +14,11 @@
   <!-- ============================ Main terminal ============================ -->
   <main class="term app" id="app">
     <div class="term-bar">
-      <button class="dot red" id="winClose" title="close"></button>
-      <button class="dot amber" id="winMin" title="minimize"></button>
-      <button class="dot green" id="winMax" title="maximize / restore"></button>
+      <span class="traffic">
+        <button class="dot red" id="winClose" title="close"></button>
+        <button class="dot amber" id="winMin" title="minimize"></button>
+        <button class="dot green" id="winMax" title="maximize / restore"></button>
+      </span>
       <span class="term-title">slayde@rate-limit-service: ~</span>
       <span class="status-pill" id="statusPill">
         <span id="warmDot" class="dot amber pulse"></span>
@@ -94,6 +96,7 @@
             <option value="500" selected>2 / sec</option>
             <option value="200">5 / sec</option>
           </select>
+          <button id="copyCurl" class="btn" title="Copy a ready-to-run curl for the current settings">⧉ copy curl</button>
           <button id="reset" class="btn ghost">reset view</button>
         </div>
 

@@ -11,33 +11,8 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- ===================== Onboarding / tutorial overlay ===================== -->
-  <div id="tutorial" class="overlay">
-    <div class="term tutorial-card">
-      <div class="term-bar">
-        <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
-        <span class="term-title">~/rate-limiter/intro.sh</span>
-      </div>
-      <div class="term-body" id="tutorialBody">
-        <!-- steps injected by JS -->
-      </div>
-      <div class="tutorial-nav">
-        <div class="tut-progress" id="tutProgress"></div>
-        <div class="tut-buttons">
-          <button id="tutSkip" class="btn ghost">skip</button>
-          <button id="tutBack" class="btn ghost" hidden>&larr; back</button>
-          <button id="tutNext" class="btn primary">next &rarr;</button>
-        </div>
-      </div>
-      <div class="tut-status">
-        <span id="warmDotTut" class="dot amber pulse"></span>
-        <span id="warmTextTut" class="dim">waking the backend in the background…</span>
-      </div>
-    </div>
-  </div>
-
   <!-- ============================ Main terminal ============================ -->
-  <main class="term app" id="app" aria-hidden="true">
+  <main class="term app" id="app">
     <div class="term-bar">
       <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
       <span class="term-title">slayde@rate-limit-service: ~</span>
@@ -45,7 +20,7 @@
         <span id="warmDot" class="dot amber pulse"></span>
         <span id="warmText">connecting…</span>
       </span>
-      <button id="helpBtn" class="btn ghost tiny" title="Replay the tutorial">?</button>
+      <button id="helpBtn" class="btn ghost tiny" title="Replay the tour">? tour</button>
     </div>
 
     <div class="term-body grid">
@@ -54,7 +29,7 @@
       <section class="panel config">
         <div class="panel-head"># config <span class="dim">— shape the request</span></div>
 
-        <label class="field">
+        <label class="field" id="fAlgo">
           <span class="lbl">algorithm</span>
           <select id="algo">
             <option value="token_bucket" selected>token_bucket</option>
@@ -64,7 +39,7 @@
           </select>
         </label>
 
-        <label class="field">
+        <label class="field" id="fClient">
           <span class="lbl">client</span>
           <select id="clientPreset">
             <option value="demo-client" data-cap="5" data-refill="0.5">demo-client &middot; free tier</option>
@@ -78,26 +53,28 @@
           <input id="clientId" type="text" value="acme-corp" spellcheck="false" />
         </label>
 
-        <label class="field">
-          <span class="lbl">capacity <span class="dim">(max burst)</span></span>
-          <div class="row">
-            <input id="capacity" type="range" min="1" max="50" value="5" />
-            <input id="capacityNum" type="number" min="1" max="500" value="5" class="num" />
-          </div>
-        </label>
+        <div id="limitsGroup">
+          <label class="field">
+            <span class="lbl">capacity <span class="dim">(max burst)</span></span>
+            <div class="row">
+              <input id="capacity" type="range" min="1" max="50" value="5" />
+              <input id="capacityNum" type="number" min="1" max="500" value="5" class="num" />
+            </div>
+          </label>
 
-        <label class="field">
-          <span class="lbl">refill / sec <span class="dim">(steady rate)</span></span>
-          <div class="row">
-            <input id="refill" type="range" min="0" max="20" step="0.5" value="0.5" />
-            <input id="refillNum" type="number" min="0" max="500" step="0.5" value="0.5" class="num" />
-          </div>
-        </label>
+          <label class="field">
+            <span class="lbl">refill / sec <span class="dim">(steady rate)</span></span>
+            <div class="row">
+              <input id="refill" type="range" min="0" max="20" step="0.5" value="0.5" />
+              <input id="refillNum" type="number" min="0" max="500" step="0.5" value="0.5" class="num" />
+            </div>
+          </label>
 
-        <label class="field">
-          <span class="lbl">cost <span class="dim">(tokens / request)</span></span>
-          <input id="cost" type="number" min="1" max="50" value="1" class="num wide" />
-        </label>
+          <label class="field">
+            <span class="lbl">cost <span class="dim">(tokens / request)</span></span>
+            <input id="cost" type="number" min="1" max="50" value="1" class="num wide" />
+          </label>
+        </div>
 
         <details class="advanced">
           <summary>backend</summary>

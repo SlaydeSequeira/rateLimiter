@@ -245,54 +245,49 @@ details.advanced summary { color: var(--dim); cursor: pointer; font-size: 12px; 
 .log::-webkit-scrollbar { width: 8px; }
 .log::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 8px; }
 
-/* ---------------- tutorial overlay ---------------- */
-.overlay {
-  position: fixed; inset: 0; z-index: 50;
-  background: radial-gradient(circle at 50% 30%, #0b1322ee, #04060acc);
-  backdrop-filter: blur(3px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 18px;
+/* ---------------- guided tour (spotlight coachmarks) ---------------- */
+/* full-screen dim + blur; sits BELOW the highlighted target so the target
+   itself stays crisp and clickable */
+.tour-block {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(6, 9, 14, .55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
-.overlay.hidden { display: none; }
-.tutorial-card { width: min(720px, 100%); }
-.tutorial-card .term-body { padding: 26px 28px 8px; min-height: 300px; }
+/* glowing frame drawn around the current target */
+.tour-spot {
+  position: fixed; z-index: 1001; pointer-events: none;
+  border-radius: 9px;
+  box-shadow:
+    0 0 0 2px var(--cyan),
+    0 0 0 5px rgba(69, 208, 216, .25),
+    0 0 26px 5px rgba(69, 208, 216, .45);
+  transition: top .22s ease, left .22s ease, width .22s ease, height .22s ease;
+}
+/* lifts the spotlighted control above the dim layer (crisp + still usable) */
+.tour-highlight { position: relative; z-index: 1002 !important; }
 
-.tut-step h2 { color: var(--cyan); font-size: 19px; margin: 0 0 14px; }
-.tut-step h2 .prompt { color: var(--green); margin-right: 8px; }
-.tut-step p { margin: 0 0 13px; color: var(--text); }
-.tut-step .dim { color: var(--dim); }
-.tut-step code, .codeblock {
-  background: #0a111d; border: 1px solid var(--border);
-  border-radius: 6px; padding: 1px 6px; color: var(--cyan); font-size: 12.5px;
+.tour-tip {
+  position: fixed; z-index: 1003;
+  width: min(300px, calc(100vw - 24px));
+  background: linear-gradient(180deg, #0f1828, #0c1320);
+  border: 1px solid var(--border-hi);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px -12px #000;
+  padding: 14px 15px 12px;
+  transition: top .2s ease, left .2s ease;
 }
-.codeblock { display: block; padding: 12px 14px; margin: 14px 0; color: var(--text); white-space: pre; overflow-x: auto; }
-.codeblock .c { color: var(--dim); }
-.codeblock .g { color: var(--green); }
-.codeblock .r { color: var(--red); }
-.codeblock .y { color: var(--amber); }
-
-.mini-bucket { display: inline-flex; gap: 4px; vertical-align: middle; margin: 0 4px; }
-.mini-bucket i { width: 11px; height: 11px; border-radius: 3px; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
-.mini-bucket i.off { background: #16243a; box-shadow: none; }
-
-.tutorial-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 22px; border-top: 1px solid var(--border); gap: 12px;
-}
-.tut-progress { display: flex; gap: 7px; }
-.tut-progress span { width: 26px; height: 4px; border-radius: 4px; background: var(--border-hi); }
-.tut-progress span.on { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
-.tut-buttons { display: flex; gap: 9px; }
-.tut-status {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 22px 16px; font-size: 12px;
-}
-
-.cursor::after {
-  content: "▋"; color: var(--green);
-  animation: blink 1s steps(1) infinite; margin-left: 2px;
-}
-@keyframes blink { 50% { opacity: 0; } }
+.tour-tip h3 { margin: 0 0 7px; color: var(--cyan); font-size: 13.5px; }
+.tour-tip h3 .prompt { color: var(--green); margin-right: 6px; }
+.tour-tip p { margin: 0 0 13px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.tour-tip .g { color: var(--green); }
+.tour-tip .r { color: var(--red); }
+.tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tour-dots { display: flex; gap: 5px; }
+.tour-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--border-hi); }
+.tour-dots span.on { background: var(--cyan); box-shadow: 0 0 7px var(--cyan); }
+.tour-acts { display: flex; gap: 7px; }
+.tour-acts .btn.tiny { padding: 5px 11px; font-size: 12px; }
 
 /* ---------------- responsive ---------------- */
 @media (max-width: 1040px) {

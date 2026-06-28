@@ -6,110 +6,14 @@
 
 const $ = (id) => document.getElementById(id);
 
-/* ============================ tutorial content ============================ */
-const STEPS = [
-  {
-    title: "What is a rate limiter?",
-    html: `
-      <p>Every public API needs to stop a single client from sending <b>too many
-      requests</b> — to prevent abuse, control cost, and keep things fast for
-      everyone else.</p>
-      <p>A rate limiter is the <b>bouncer at the door</b>. It tracks how many
-      requests each client (identified by a <code>clientId</code>) has made and
-      answers one question per request:</p>
-      <div class="codeblock"><span class="g">ALLOW</span>  &mdash; you're under your limit, go ahead
-<span class="r">DENY</span>   &mdash; slow down, try again shortly</div>
-      <p class="dim">This demo calls a <b>real service</b> running on Render. Every
-      click below is a live HTTP request.</p>`
-  },
-  {
-    title: "The token bucket algorithm",
-    html: `
-      <p>Give every client a <b>bucket of tokens</b>:</p>
-      <p><span class="mini-bucket"><i></i><i></i><i></i><i class="off"></i><i class="off"></i></span></p>
-      <p>
-        &bull; <code>capacity</code> &mdash; the most tokens the bucket can hold
-        <span class="dim">(your max burst)</span><br/>
-        &bull; <code>refill</code> &mdash; tokens added back every second
-        <span class="dim">(your steady allowed pace)</span><br/>
-        &bull; <code>cost</code> &mdash; tokens one request spends
-        <span class="dim">(usually 1)</span>
-      </p>
-      <p>Each request tries to take <code>cost</code> tokens. Enough in the bucket?
-      <span class="g">ALLOWED</span>, and the tokens are removed. Not enough?
-      <span class="r">DENIED</span>. Meanwhile the bucket <b>refills continuously</b>,
-      so waiting a moment buys you more.</p>
-      <div class="codeblock"><span class="c"># capacity 5, refill 0.5/sec</span>
-fire 5 fast requests  <span class="g">-> all allowed</span>  <span class="c">(burst)</span>
-6th request instantly  <span class="r">-> denied</span>     <span class="c">(bucket empty)</span>
-wait ~2s               <span class="g">-> 1 token back</span> <span class="c">(steady rate)</span></div>`
-  },
-  {
-    title: "Built to be pluggable",
-    html: `
-      <p>This service ships with <b>token bucket</b> today, but the algorithm is
-      <b>swappable</b> — sliding window, leaky bucket and fixed window can be added
-      without changing a single line in the apps that call it.</p>
-      <p>You'll see them in the <code>algorithm</code> dropdown, greyed out
-      <span class="dim">(= interface exists, not wired up yet)</span>. That's the
-      whole point of the design: <b>add an algorithm, register it, done.</b></p>
-      <p class="dim">Storage is pluggable the same way — in-memory now, Redis by
-      flipping one env var, for sharing limits across many servers.</p>`
-  },
-  {
-    title: "Your turn — drive it",
-    html: `
-      <p>1. Pick a <b>client</b> &amp; a plan. Different clients have
-      <b>separate buckets</b> — try draining one, then switch and watch the other
-      is still full.</p>
-      <p>2. Hit <b>SEND REQUEST</b> and watch the bucket drain.</p>
-      <p>3. <b>Spam it</b> (send &times;10 / auto) — watch requests flip to
-      <span class="r">DENIED</span> when it empties, then recover as it refills.</p>
-      <p>4. Read the <b>narration</b> and the <b>log</b> to see exactly what the
-      server decided, and why.</p>
-      <p class="dim">Tweak <code>capacity</code>, <code>refill</code> and
-      <code>cost</code> live to feel how the algorithm responds.</p>`
-  }
-];
-
-/* ============================ tutorial engine ============================ */
-let stepIdx = 0;
-function renderStep() {
-  const s = STEPS[stepIdx];
-  $("tutorialBody").innerHTML =
-    `<div class="tut-step"><h2><span class="prompt">$</span>${s.title}</h2>${s.html}</div>`;
-  $("tutProgress").innerHTML = STEPS
-    .map((_, i) => `<span class="${i <= stepIdx ? "on" : ""}"></span>`)
-    .join("");
-  $("tutBack").hidden = stepIdx === 0;
-  $("tutNext").textContent = stepIdx === STEPS.length - 1 ? "enter terminal →" : "next →";
-}
-function closeTutorial() {
-  $("tutorial").classList.add("hidden");
-  $("app").setAttribute("aria-hidden", "false");
-  try { localStorage.setItem("rl_seen", "1"); } catch (_) {}
-}
-$("tutNext").onclick = () => {
-  if (stepIdx < STEPS.length - 1) { stepIdx++; renderStep(); }
-  else closeTutorial();
-};
-$("tutBack").onclick = () => { if (stepIdx > 0) { stepIdx--; renderStep(); } };
-$("tutSkip").onclick = closeTutorial;
-$("helpBtn").onclick = () => {
-  stepIdx = 0; renderStep();
-  $("tutorial").classList.remove("hidden");
-  $("app").setAttribute("aria-hidden", "true");
-};
-renderStep();
-
 /* ============================ config state ============================ */
 const cfg = {
-  get base()   { return $("baseUrl").value.trim().replace(/\/+$/, ""); },
-  get apiKey() { return $("apiKey").value.trim(); },
-  get algo()   { return $("algo").value; },
+  get base()    { return $("baseUrl").value.trim().replace(/\/+$/, ""); },
+  get apiKey()  { return $("apiKey").value.trim(); },
+  get algo()    { return $("algo").value; },
   get capacity(){ return Math.max(1, Number($("capacityNum").value) || 1); },
-  get refill() { return Math.max(0, Number($("refillNum").value) || 0); },
-  get cost()   { return Math.max(1, Number($("cost").value) || 1); },
+  get refill()  { return Math.max(0, Number($("refillNum").value) || 0); },
+  get cost()    { return Math.max(1, Number($("cost").value) || 1); },
   get clientId() {
     const preset = $("clientPreset").value;
     return preset === "__custom__" ? ($("clientId").value.trim() || "anon") : preset;
@@ -219,7 +123,6 @@ function narrate(kind, html) {
 }
 
 /* ============================ the request ============================ */
-let inFlight = 0;
 async function sendRequest() {
   const clientId = cfg.clientId, cost = cfg.cost;
   const policy = { algorithm: cfg.algo, capacity: cfg.capacity, refillRatePerSec: cfg.refill };
@@ -227,7 +130,6 @@ async function sendRequest() {
   logLine(`<span class="req">[${ts()}] <span class="mag">POST</span> /v1/check ` +
           `{client:"${clientId}", cost:${cost}}</span>`);
 
-  inFlight++;
   let data, status;
   try {
     const res = await fetch(cfg.base + "/v1/check", {
@@ -240,10 +142,8 @@ async function sendRequest() {
   } catch (err) {
     logLine(`<span class="res warn">  ↳ network error: ${String(err.message || err)}</span>`);
     narrate("bad", `⚠ couldn't reach the backend. Is the base url right / is it awake?`);
-    inFlight--;
     return;
   }
-  inFlight--;
 
   if (status === 401) {
     logLine(`<span class="res warn">  ↳ 401 unauthorized — check x-api-key</span>`);
@@ -265,7 +165,7 @@ async function sendRequest() {
     logLine(`<span class="res ok">  ↳ 200 ALLOWED · remaining ${data.remaining}/${data.limit}` +
             ` · resets in ${ms(data.resetMs)}</span>`);
     narrate("ok",
-      `<b class="">✅ ALLOWED.</b> Spent ${cost} token${cost > 1 ? "s" : ""}. ` +
+      `<b>✅ ALLOWED.</b> Spent ${cost} token${cost > 1 ? "s" : ""}. ` +
       `<b>${data.remaining}</b> left of ${data.limit}. ` +
       (cfg.refill > 0
         ? `Bucket refills 1 every ${fmt(1 / cfg.refill)}s.`
@@ -299,8 +199,7 @@ $("auto").onclick = () => {
   if (autoTimer) {
     clearInterval(autoTimer); autoTimer = null; $("autoState").textContent = "▶";
   } else {
-    const run = () => sendRequest();
-    autoTimer = setInterval(run, Number($("autoSpeed").value));
+    autoTimer = setInterval(sendRequest, Number($("autoSpeed").value));
     $("autoState").textContent = "⏸";
   }
 };
@@ -328,19 +227,119 @@ async function warmUp() {
   setWarm("red", "backend unreachable");
 }
 function setWarm(color, text) {
-  for (const dotId of ["warmDot", "warmDotTut"]) {
-    const d = $(dotId); if (!d) continue;
-    d.className = "dot " + color + (color !== "green" ? " pulse" : "");
-  }
-  for (const tId of ["warmText", "warmTextTut"]) {
-    const t = $(tId); if (t) t.textContent = text;
-  }
+  const d = $("warmDot");
+  if (d) d.className = "dot " + color + (color !== "green" ? " pulse" : "");
+  const t = $("warmText");
+  if (t) t.textContent = text;
 }
+
+/* ============================ guided spotlight tour ============================ */
+const TOUR = [
+  { sel: "#fAlgo", place: "right", title: "1. algorithm",
+    text: 'Pick the limiting strategy. <b>token_bucket</b> is live — the greyed-out ones are pluggable, just not wired up yet.' },
+  { sel: "#fClient", place: "right", title: "2. client",
+    text: 'Choose who is calling. <b>Every client gets its own separate bucket</b>, so one running dry never affects another.' },
+  { sel: "#limitsGroup", place: "right", title: "3. the limits",
+    text: '<b>capacity</b> = biggest burst allowed. <b>refill</b> = tokens added back each second (the steady pace). Tweak them live.' },
+  { sel: "#bucket", place: "left", title: "4. the bucket",
+    text: 'Tokens live here. Each request <b>drains</b> them and they <b>refill</b> over time. Hit empty → requests get denied.' },
+  { sel: "#send", place: "top", last: true, title: "5. send it →",
+    text: 'Now fire a <b>real request</b> and watch <span class="g">ALLOW</span> / <span class="r">DENY</span>. Spam it to drain the bucket and see it recover!' }
+];
+
+let tIdx = 0, tEls = null, tTarget = null;
+
+function buildTour() {
+  const block = document.createElement("div"); block.className = "tour-block";
+  const spot = document.createElement("div");  spot.className = "tour-spot";
+  const tip = document.createElement("div");   tip.className = "tour-tip";
+  document.body.append(block, spot, tip);
+  return { block, spot, tip };
+}
+
+function startTour() {
+  if (!tEls) tEls = buildTour();
+  tIdx = 0;
+  for (const k of ["block", "spot", "tip"]) tEls[k].style.display = "block";
+  window.addEventListener("resize", positionTour);
+  window.addEventListener("scroll", positionTour, true);
+  showTourStep();
+}
+
+function endTour() {
+  try { localStorage.setItem("rl_seen", "1"); } catch (_) {}
+  if (tTarget) tTarget.classList.remove("tour-highlight");
+  tTarget = null;
+  if (tEls) for (const k of ["block", "spot", "tip"]) tEls[k].style.display = "none";
+  window.removeEventListener("resize", positionTour);
+  window.removeEventListener("scroll", positionTour, true);
+}
+
+function showTourStep() {
+  const step = TOUR[tIdx];
+  if (tTarget) tTarget.classList.remove("tour-highlight");
+  tTarget = document.querySelector(step.sel);
+  if (!tTarget) { // target missing — skip gracefully
+    if (tIdx < TOUR.length - 1) { tIdx++; return showTourStep(); }
+    return endTour();
+  }
+  tTarget.scrollIntoView({ block: "center", inline: "nearest" });
+  tTarget.classList.add("tour-highlight");
+
+  const dots = TOUR.map((_, i) => `<span class="${i === tIdx ? "on" : ""}"></span>`).join("");
+  tEls.tip.innerHTML =
+    `<h3><span class="prompt">$</span>${step.title}</h3>` +
+    `<p>${step.text}</p>` +
+    `<div class="tour-foot"><div class="tour-dots">${dots}</div><div class="tour-acts">` +
+      `<button class="btn ghost tiny" id="tourSkip">skip</button>` +
+      (tIdx > 0 ? `<button class="btn ghost tiny" id="tourBack">back</button>` : ``) +
+      `<button class="btn primary tiny" id="tourNext">${step.last ? "got it ✓" : "next →"}</button>` +
+    `</div></div>`;
+
+  $("tourSkip").onclick = endTour;
+  const back = document.getElementById("tourBack");
+  if (back) back.onclick = () => { tIdx--; showTourStep(); };
+  $("tourNext").onclick = () => {
+    if (tIdx < TOUR.length - 1) { tIdx++; showTourStep(); } else endTour();
+  };
+  // last step: clicking the real Send button also ends the tour
+  if (step.last) tTarget.addEventListener("click", endTour, { once: true });
+
+  requestAnimationFrame(positionTour);
+}
+
+function positionTour() {
+  if (!tTarget || !tEls) return;
+  const r = tTarget.getBoundingClientRect();
+  const pad = 7;
+  Object.assign(tEls.spot.style, {
+    top: (r.top - pad) + "px",
+    left: (r.left - pad) + "px",
+    width: (r.width + pad * 2) + "px",
+    height: (r.height + pad * 2) + "px"
+  });
+
+  const tip = tEls.tip;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight, gap = 14;
+  const place = TOUR[tIdx].place || "bottom";
+  let top, left;
+  if (place === "right" && r.right + tw + gap < vw)      { left = r.right + gap;  top = r.top; }
+  else if (place === "left" && r.left - tw - gap > 0)    { left = r.left - tw - gap; top = r.top; }
+  else if (place === "top")                              { top = r.top - th - gap; left = r.left; }
+  else                                                   { top = r.bottom + gap; left = r.left; }
+  left = Math.max(12, Math.min(left, vw - tw - 12));
+  top  = Math.max(12, Math.min(top,  vh - th - 12));
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+}
+
+$("helpBtn").onclick = startTour;
 
 /* ============================ boot ============================ */
 onPlanChange(true);
 requestAnimationFrame(frame);
-warmUp();                       // start warming immediately, while user reads the tutorial
-try {
-  if (localStorage.getItem("rl_seen")) closeTutorial();   // returning visitor skips intro
-} catch (_) {}
+warmUp();                       // start warming the dyno immediately
+let seen = false;
+try { seen = !!localStorage.getItem("rl_seen"); } catch (_) {}
+if (!seen) startTour();         // first-time visitors get the guided tour straight away

@@ -238,8 +238,8 @@ $("reset").onclick = () => {
 
 /* ---- terminal window chrome: minimize / close / maximize ---- */
 const appEl = $("app");
-function minimizeApp() { appEl.classList.add("minimized"); $("launcher").hidden = false; endTour(); }
-function restoreApp() { appEl.classList.remove("minimized"); $("launcher").hidden = true; }
+function minimizeApp() { appEl.classList.add("minimized"); $("launcher").classList.add("show"); endTour(); }
+function restoreApp() { appEl.classList.remove("minimized"); $("launcher").classList.remove("show"); }
 function toggleMax() { appEl.classList.toggle("maximized"); requestAnimationFrame(positionTour); }
 $("winMin").onclick = minimizeApp;
 $("winClose").onclick = minimizeApp;   // single-page app: "close" parks it as an icon too

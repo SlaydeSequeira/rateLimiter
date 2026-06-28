@@ -331,12 +331,11 @@ input[type="range"] { flex: 1; accent-color: var(--cyan); height: 4px; }
   .term-body.grid.no-log { grid-template-columns: 1fr; }
 }
 
-/* launcher icon shown while minimized/closed */
-.launcher[hidden] { display: none; }   /* author display:flex would otherwise beat [hidden] */
+/* launcher icon — hidden by default, shown only while minimized via .show */
 .launcher {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 60;
-  display: flex; align-items: center; gap: 14px;
+  display: none; align-items: center; gap: 14px;
   font-family: var(--font);
   background: linear-gradient(180deg, #0b0d11, #07090c);
   color: var(--text);
@@ -347,6 +346,7 @@ input[type="range"] { flex: 1; accent-color: var(--cyan); height: 4px; }
   box-shadow: 0 30px 70px -20px #000, 0 0 50px -18px var(--cyan);
   transition: transform .12s, box-shadow .15s, border-color .15s;
 }
+.launcher.show { display: flex; }
 .launcher:hover { transform: translate(-50%, -50%) scale(1.04); border-color: var(--cyan); box-shadow: 0 30px 70px -16px #000, 0 0 64px -14px var(--cyan); }
 .launcher-icon {
   display: grid; place-items: center;

@@ -38,8 +38,41 @@ function onAlgoChange() {
   // fixed window refills in a single step at the window boundary; the others
   // recover continuously.
   sim.stepMode = $("algo").value === "fixed_window";
+  setAlgoDesc();
   clearDeny();
   onPlanChange(true);
+}
+
+const ALGO_DESC = {
+  token_bucket:   "<b>Burst then steady.</b> Holds up to <b>capacity</b> tokens, refills continuously. Allows bursts, caps the long-run rate. Solid default.",
+  leaky_bucket:   "<b>Smoothed output.</b> Requests fill a bucket that drains at a fixed rate — bursts queue up, overflow is rejected.",
+  fixed_window:   "<b>Simple counter.</b> N requests per fixed window; the count resets at each boundary. Can allow ~2× across a boundary.",
+  sliding_window: "<b>Rolling & fair.</b> N per moving window, weighting the previous window — avoids the fixed-window edge burst.",
+};
+function setAlgoDesc() {
+  $("algoDesc").innerHTML = ALGO_DESC[$("algo").value] || "";
+}
+
+/* ---- persist the user's settings across reloads ---- */
+const LS_CFG = "rl_cfg";
+function saveCfg() {
+  try {
+    localStorage.setItem(LS_CFG, JSON.stringify({
+      algo: $("algo").value,
+      capacity: $("capacityNum").value,
+      refill: $("refillNum").value,
+      cost: $("cost").value,
+    }));
+  } catch (_) {}
+}
+function loadCfg() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(LS_CFG) || "null"); } catch (_) {}
+  if (!s) return;
+  if (s.algo && $("algo").querySelector(`option[value="${s.algo}"]`)) $("algo").value = s.algo;
+  if (s.capacity != null) $("capacity").value = $("capacityNum").value = s.capacity;
+  if (s.refill != null) $("refill").value = $("refillNum").value = s.refill;
+  if (s.cost != null) $("cost").value = s.cost;
 }
 
 /* ============================ bucket simulation ============================ */
@@ -76,6 +109,7 @@ function updateCaption() {
   }
   $("rateCaption").textContent = s;
   $("tokenCap").textContent = sim.cap;
+  saveCfg();
 }
 
 function fmt(n) {
@@ -428,8 +462,19 @@ function positionTour() {
 
 $("helpBtn").onclick = startTour;
 
+/* ---- keyboard: Enter sends a request (unless you're typing in a control) ---- */
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || tag === "BUTTON") return;
+  if (appEl.classList.contains("minimized")) return;
+  e.preventDefault();
+  sendRequest();
+});
+
 /* ============================ boot ============================ */
-onPlanChange(true);
+loadCfg();        // restore the user's last settings...
+onAlgoChange();   // ...then apply them (caption, description, bucket, step-mode)
 requestAnimationFrame(frame);
 warmUp();                       // start warming the dyno immediately
 let seen = false;

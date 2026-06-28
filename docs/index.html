@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>rate-limit-service // live demo</title>
   <meta name="description" content="Interactive terminal demo of a token-bucket rate limiting microservice." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23060709'/%3E%3Ctext x='9' y='45' font-family='monospace' font-size='36' font-weight='bold' fill='%233fb950'%3E%3E_%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -15,9 +16,9 @@
   <main class="term app" id="app">
     <div class="term-bar">
       <span class="traffic">
-        <button class="dot red" id="winClose" title="close"></button>
-        <button class="dot amber" id="winMin" title="minimize"></button>
-        <button class="dot green" id="winMax" title="maximize / restore"></button>
+        <button class="dot red" id="winClose" title="close" aria-label="close"></button>
+        <button class="dot amber" id="winMin" title="minimize" aria-label="minimize"></button>
+        <button class="dot green" id="winMax" title="maximize / restore" aria-label="maximize or restore"></button>
       </span>
       <span class="term-title">slayde@rate-limit-service: ~</span>
       <span class="status-pill" id="statusPill">
@@ -42,6 +43,7 @@
             <option value="fixed_window">fixed_window</option>
             <option value="sliding_window">sliding_window</option>
           </select>
+          <div class="algo-desc" id="algoDesc"></div>
         </label>
 
         <div id="limitsGroup">
@@ -117,7 +119,7 @@
   </main>
 
   <!-- shown when the terminal is minimized/closed; click to reopen -->
-  <button id="launcher" class="launcher">
+  <button id="launcher" class="launcher" aria-label="reopen the rate-limit-service terminal">
     <span class="launcher-icon">&gt;_</span>
     <span class="launcher-text">rate-limit-service<small>click to reopen</small></span>
   </button>

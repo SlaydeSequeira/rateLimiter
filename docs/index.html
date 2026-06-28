@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rate-limit-service // live demo</title>
+  <meta name="description" content="Interactive terminal demo of a token-bucket rate limiting microservice." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ===================== Onboarding / tutorial overlay ===================== -->
+  <div id="tutorial" class="overlay">
+    <div class="term tutorial-card">
+      <div class="term-bar">
+        <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+        <span class="term-title">~/rate-limiter/intro.sh</span>
+      </div>
+      <div class="term-body" id="tutorialBody">
+        <!-- steps injected by JS -->
+      </div>
+      <div class="tutorial-nav">
+        <div class="tut-progress" id="tutProgress"></div>
+        <div class="tut-buttons">
+          <button id="tutSkip" class="btn ghost">skip</button>
+          <button id="tutBack" class="btn ghost" hidden>&larr; back</button>
+          <button id="tutNext" class="btn primary">next &rarr;</button>
+        </div>
+      </div>
+      <div class="tut-status">
+        <span id="warmDotTut" class="dot amber pulse"></span>
+        <span id="warmTextTut" class="dim">waking the backend in the background…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ Main terminal ============================ -->
+  <main class="term app" id="app" aria-hidden="true">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+      <span class="term-title">slayde@rate-limit-service: ~</span>
+      <span class="status-pill" id="statusPill">
+        <span id="warmDot" class="dot amber pulse"></span>
+        <span id="warmText">connecting…</span>
+      </span>
+      <button id="helpBtn" class="btn ghost tiny" title="Replay the tutorial">?</button>
+    </div>
+
+    <div class="term-body grid">
+
+      <!-- ---------- Left: configuration ---------- -->
+      <section class="panel config">
+        <div class="panel-head"># config <span class="dim">— shape the request</span></div>
+
+        <label class="field">
+          <span class="lbl">algorithm</span>
+          <select id="algo">
+            <option value="token_bucket" selected>token_bucket</option>
+            <option value="sliding_window" disabled>sliding_window — coming soon</option>
+            <option value="leaky_bucket" disabled>leaky_bucket — coming soon</option>
+            <option value="fixed_window" disabled>fixed_window — coming soon</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="lbl">client</span>
+          <select id="clientPreset">
+            <option value="demo-client" data-cap="5" data-refill="0.5">demo-client &middot; free tier</option>
+            <option value="premium-client" data-cap="50" data-refill="10">premium-client &middot; paid tier</option>
+            <option value="__custom__" data-cap="20" data-refill="2">custom client…</option>
+          </select>
+        </label>
+
+        <label class="field" id="customClientField" hidden>
+          <span class="lbl">client id</span>
+          <input id="clientId" type="text" value="acme-corp" spellcheck="false" />
+        </label>
+
+        <label class="field">
+          <span class="lbl">capacity <span class="dim">(max burst)</span></span>
+          <div class="row">
+            <input id="capacity" type="range" min="1" max="50" value="5" />
+            <input id="capacityNum" type="number" min="1" max="500" value="5" class="num" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="lbl">refill / sec <span class="dim">(steady rate)</span></span>
+          <div class="row">
+            <input id="refill" type="range" min="0" max="20" step="0.5" value="0.5" />
+            <input id="refillNum" type="number" min="0" max="500" step="0.5" value="0.5" class="num" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="lbl">cost <span class="dim">(tokens / request)</span></span>
+          <input id="cost" type="number" min="1" max="50" value="1" class="num wide" />
+        </label>
+
+        <details class="advanced">
+          <summary>backend</summary>
+          <label class="field">
+            <span class="lbl">base url</span>
+            <input id="baseUrl" type="text" value="https://ratelimiter-jx5i.onrender.com" spellcheck="false" />
+          </label>
+          <label class="field">
+            <span class="lbl">x-api-key</span>
+            <input id="apiKey" type="text" value="test" spellcheck="false" />
+          </label>
+        </details>
+      </section>
+
+      <!-- ---------- Center: the bucket ---------- -->
+      <section class="panel stage">
+        <div class="panel-head"># token bucket <span class="dim" id="rateCaption"></span></div>
+
+        <div class="bucket-wrap">
+          <div class="bucket" id="bucket">
+            <div class="bucket-fill" id="bucketFill"></div>
+            <div class="bucket-reading">
+              <span id="tokenCount">5</span><span class="dim">/<span id="tokenCap">5</span></span>
+              <div class="dim small">tokens</div>
+            </div>
+          </div>
+          <div class="pips" id="pips"></div>
+        </div>
+
+        <div class="narration" id="narration">
+          <span class="prompt">$</span> ready. press <b>SEND REQUEST</b> to spend a token.
+        </div>
+
+        <div class="controls">
+          <button id="send" class="btn primary big">SEND REQUEST</button>
+          <button id="burst" class="btn">send &times;10</button>
+          <button id="auto" class="btn">auto&nbsp;<span id="autoState">▶</span></button>
+          <select id="autoSpeed" class="num" title="auto-fire interval">
+            <option value="1000">1 / sec</option>
+            <option value="500" selected>2 / sec</option>
+            <option value="200">5 / sec</option>
+          </select>
+          <button id="reset" class="btn ghost">reset view</button>
+        </div>
+
+        <div class="stats">
+          <span>sent <b id="statSent">0</b></span>
+          <span class="ok">allowed <b id="statOk">0</b></span>
+          <span class="bad">denied <b id="statBad">0</b></span>
+        </div>
+      </section>
+
+      <!-- ---------- Right: live log ---------- -->
+      <section class="panel logwrap">
+        <div class="panel-head"># request log <span class="dim">— live HTTP to Render</span></div>
+        <div class="log" id="log"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

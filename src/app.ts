@@ -3,10 +3,12 @@ import { RateLimiter } from "./core/rateLimiter";
 import { RateLimitStore } from "./stores/types";
 import { checkRouter } from "./routes/check";
 import { demoRouter } from "./routes/demo";
+import { cors } from "./middleware/cors";
 
 /** Builds the Express app. Kept separate from server bootstrap for testability. */
 export function createApp(limiter: RateLimiter, store: RateLimitStore) {
   const app = express();
+  app.use(cors);
   app.use(express.json());
 
   // Liveness/readiness probe for Render's health check.

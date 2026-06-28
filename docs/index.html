@@ -39,20 +39,6 @@
           </select>
         </label>
 
-        <label class="field" id="fClient">
-          <span class="lbl">client</span>
-          <select id="clientPreset">
-            <option value="demo-client" data-cap="5" data-refill="0.5">demo-client &middot; free tier</option>
-            <option value="premium-client" data-cap="50" data-refill="10">premium-client &middot; paid tier</option>
-            <option value="__custom__" data-cap="20" data-refill="2">custom client…</option>
-          </select>
-        </label>
-
-        <label class="field" id="customClientField" hidden>
-          <span class="lbl">client id</span>
-          <input id="clientId" type="text" value="acme-corp" spellcheck="false" />
-        </label>
-
         <div id="limitsGroup">
           <label class="field">
             <span class="lbl">capacity <span class="dim">(max burst)</span></span>
@@ -65,8 +51,8 @@
           <label class="field">
             <span class="lbl">refill / sec <span class="dim">(steady rate)</span></span>
             <div class="row">
-              <input id="refill" type="range" min="0" max="20" step="0.5" value="0.5" />
-              <input id="refillNum" type="number" min="0" max="500" step="0.5" value="0.5" class="num" />
+              <input id="refill" type="range" min="0" max="20" step="0.25" value="0.25" />
+              <input id="refillNum" type="number" min="0" max="500" step="0.25" value="0.25" class="num" />
             </div>
           </label>
 
@@ -75,18 +61,6 @@
             <input id="cost" type="number" min="1" max="50" value="1" class="num wide" />
           </label>
         </div>
-
-        <details class="advanced">
-          <summary>backend</summary>
-          <label class="field">
-            <span class="lbl">base url</span>
-            <input id="baseUrl" type="text" value="https://ratelimiter-jx5i.onrender.com" spellcheck="false" />
-          </label>
-          <label class="field">
-            <span class="lbl">x-api-key</span>
-            <input id="apiKey" type="text" value="test" spellcheck="false" />
-          </label>
-        </details>
       </section>
 
       <!-- ---------- Center: the bucket ---------- -->

@@ -6,18 +6,21 @@
 
 const $ = (id) => document.getElementById(id);
 
+/* ---- backend wiring (kept out of the UI on purpose) ---- */
+const BACKEND_URL = "https://ratelimiter-jx5i.onrender.com";
+const API_KEY = "test";
+// Each browser session gets its own client id, so visitors don't share a bucket.
+const CLIENT_ID = "web-" + Math.random().toString(36).slice(2, 8);
+
 /* ============================ config state ============================ */
 const cfg = {
-  get base()    { return $("baseUrl").value.trim().replace(/\/+$/, ""); },
-  get apiKey()  { return $("apiKey").value.trim(); },
+  base: BACKEND_URL,
+  apiKey: API_KEY,
+  clientId: CLIENT_ID,
   get algo()    { return $("algo").value; },
   get capacity(){ return Math.max(1, Number($("capacityNum").value) || 1); },
   get refill()  { return Math.max(0, Number($("refillNum").value) || 0); },
-  get cost()    { return Math.max(1, Number($("cost").value) || 1); },
-  get clientId() {
-    const preset = $("clientPreset").value;
-    return preset === "__custom__" ? ($("clientId").value.trim() || "anon") : preset;
-  }
+  get cost()    { return Math.max(1, Number($("cost").value) || 1); }
 };
 
 /* keep range + number inputs in sync */
@@ -28,20 +31,12 @@ function link(rangeId, numId, after) {
 }
 link("capacity", "capacityNum", onPlanChange);
 link("refill", "refillNum", onPlanChange);
-
-$("clientPreset").addEventListener("change", () => {
-  const opt = $("clientPreset").selectedOptions[0];
-  $("customClientField").hidden = $("clientPreset").value !== "__custom__";
-  $("capacity").value = $("capacityNum").value = opt.dataset.cap;
-  $("refill").value = $("refillNum").value = opt.dataset.refill;
-  onPlanChange(true);
-});
 $("cost").addEventListener("input", updateCaption);
 
 /* ============================ bucket simulation ============================ */
 const sim = {
   cap: 5,
-  refill: 0.5,
+  refill: 0.25,
   actual: 5,    // authoritative-ish local token count (float)
   display: 5,   // eased value actually drawn
   denyFlashUntil: 0,
@@ -237,13 +232,11 @@ function setWarm(color, text) {
 const TOUR = [
   { sel: "#fAlgo", place: "right", title: "1. algorithm",
     text: 'Pick the limiting strategy. <b>token_bucket</b> is live — the greyed-out ones are pluggable, just not wired up yet.' },
-  { sel: "#fClient", place: "right", title: "2. client",
-    text: 'Choose who is calling. <b>Every client gets its own separate bucket</b>, so one running dry never affects another.' },
-  { sel: "#limitsGroup", place: "right", title: "3. the limits",
+  { sel: "#limitsGroup", place: "right", title: "2. the limits",
     text: '<b>capacity</b> = biggest burst allowed. <b>refill</b> = tokens added back each second (the steady pace). Tweak them live.' },
-  { sel: "#bucket", place: "left", title: "4. the bucket",
+  { sel: "#bucket", place: "left", title: "3. the bucket",
     text: 'Tokens live here. Each request <b>drains</b> them and they <b>refill</b> over time. Hit empty → requests get denied.' },
-  { sel: "#send", place: "top", last: true, title: "5. send it →",
+  { sel: "#send", place: "top", last: true, title: "4. send it →",
     text: 'Now fire a <b>real request</b> and watch <span class="g">ALLOW</span> / <span class="r">DENY</span>. Spam it to drain the bucket and see it recover!' }
 ];
 

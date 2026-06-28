@@ -1,9 +1,10 @@
 # rate-limit-service
 
 A small, generic rate-limiting microservice. Other services call it with a
-**client id** and it answers whether that client is within its limit. It uses
-the **token bucket** algorithm today, but the algorithm and the storage backend
-are both pluggable — you can add new ones without touching callers.
+**client id** and it answers whether that client is within its limit. It ships
+with four algorithms — **token bucket**, **leaky bucket**, **fixed window** and
+**sliding window** — and the algorithm and storage backend are both pluggable,
+so you can add more without touching callers.
 
 Deploys to [Render](https://render.com) with a single `git push` (a Blueprint
 is included).

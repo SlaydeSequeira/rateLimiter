@@ -32,6 +32,15 @@ function link(rangeId, numId, after) {
 link("capacity", "capacityNum", onPlanChange);
 link("refill", "refillNum", onPlanChange);
 $("cost").addEventListener("input", updateCaption);
+$("algo").addEventListener("change", onAlgoChange);
+
+function onAlgoChange() {
+  // fixed window refills in a single step at the window boundary; the others
+  // recover continuously.
+  sim.stepMode = $("algo").value === "fixed_window";
+  clearDeny();
+  onPlanChange(true);
+}
 
 /* ============================ bucket simulation ============================ */
 const sim = {
@@ -40,6 +49,8 @@ const sim = {
   actual: 5,    // authoritative-ish local token count (float)
   display: 5,   // eased value actually drawn
   denyFlashUntil: 0,
+  stepMode: false,   // fixed_window: refill in one step at the boundary
+  windowReset: 0,    // performance.now() timestamp of the next step refill
   last: performance.now()
 };
 
@@ -52,10 +63,18 @@ function onPlanChange(resetTokens) {
 }
 
 function updateCaption() {
-  const r = cfg.refill;
-  const every = r > 0 ? `1 token every ${fmt(1 / r)}s` : "no refill";
-  $("rateCaption").textContent =
-    `— cap ${cfg.capacity} · +${fmt(r)}/s (${every}) · cost ${cfg.cost}`;
+  const algo = $("algo").value, cap = cfg.capacity, r = cfg.refill, cost = cfg.cost;
+  let s;
+  if (algo === "fixed_window" || algo === "sliding_window") {
+    const win = r > 0 ? fmt(cap / r) : "60";
+    s = `— limit ${cap} per ${win}s ${algo === "sliding_window" ? "sliding " : ""}window · cost ${cost}`;
+  } else if (algo === "leaky_bucket") {
+    s = `— cap ${cap} · leak ${fmt(r)}/s · cost ${cost}`;
+  } else {
+    const every = r > 0 ? `1 every ${fmt(1 / r)}s` : "no refill";
+    s = `— cap ${cap} · +${fmt(r)}/s (${every}) · cost ${cost}`;
+  }
+  $("rateCaption").textContent = s;
   $("tokenCap").textContent = sim.cap;
 }
 
@@ -68,7 +87,21 @@ function frame(now) {
   const dt = Math.min(0.25, (now - sim.last) / 1000);
   sim.last = now;
 
-  sim.actual = Math.min(sim.cap, sim.actual + dt * sim.refill);
+  if (sim.stepMode) {
+    // fixed window: tokens come back all at once when the window rolls over
+    if (sim.windowReset && now >= sim.windowReset) { sim.actual = sim.cap; sim.windowReset = 0; }
+  } else {
+    // continuous recovery (token / leaky / sliding)
+    sim.actual = Math.min(sim.cap, sim.actual + dt * sim.refill);
+  }
+
+  // once enough has recovered after a denial, retire the red message so it
+  // doesn't linger looking like a live error
+  if (denyActive && sim.actual >= cfg.cost) {
+    denyActive = false;
+    narrate("ok", `recovered — <b>${Math.floor(sim.actual)}</b> available again. ready to send.`);
+  }
+
   sim.display += (sim.actual - sim.display) * Math.min(1, dt * 9);
   if (Math.abs(sim.actual - sim.display) < 0.01) sim.display = sim.actual;
 
@@ -94,6 +127,8 @@ function drawPips() {
 
 /* ============================ stats + log ============================ */
 let sent = 0, ok = 0, bad = 0;
+let denyActive = false;                 // true while the last result was a denial
+function clearDeny() { denyActive = false; }
 function bumpStats(allowed) {
   sent++; allowed ? ok++ : bad++;
   $("statSent").textContent = sent;
@@ -120,7 +155,14 @@ function narrate(kind, html) {
 /* ============================ the request ============================ */
 async function sendRequest() {
   const clientId = cfg.clientId, cost = cfg.cost;
-  const policy = { algorithm: cfg.algo, capacity: cfg.capacity, refillRatePerSec: cfg.refill };
+  const windowSec = cfg.refill > 0 ? cfg.capacity / cfg.refill : 60;
+  const policy = {
+    algorithm: cfg.algo,
+    capacity: cfg.capacity,
+    refillRatePerSec: cfg.refill,
+    limit: cfg.capacity,          // window algorithms read this
+    windowSec                     // ...and this
+  };
 
   logLine(`<span class="req">[${ts()}] <span class="mag">POST</span> /v1/check ` +
           `{client:"${clientId}", cost:${cost}}</span>`);
@@ -154,23 +196,26 @@ async function sendRequest() {
   sim.cap = data.limit;
   sim.actual = data.remaining;
   $("tokenCap").textContent = sim.cap;
+  if (sim.stepMode) sim.windowReset = performance.now() + data.resetMs;
   bumpStats(data.allowed);
 
   if (data.allowed) {
+    denyActive = false;
     logLine(`<span class="res ok">  ↳ 200 ALLOWED · remaining ${data.remaining}/${data.limit}` +
             ` · resets in ${ms(data.resetMs)}</span>`);
+    const tail = $("algo").value === "fixed_window"
+      ? `Window resets in ${ms(data.resetMs)}.`
+      : (cfg.refill > 0 ? `Refills 1 every ${fmt(1 / cfg.refill)}s.` : `No refill configured.`);
     narrate("ok",
-      `<b>✅ ALLOWED.</b> Spent ${cost} token${cost > 1 ? "s" : ""}. ` +
-      `<b>${data.remaining}</b> left of ${data.limit}. ` +
-      (cfg.refill > 0
-        ? `Bucket refills 1 every ${fmt(1 / cfg.refill)}s.`
-        : `No refill configured.`));
+      `<b>✅ ALLOWED.</b> Spent ${cost} unit${cost > 1 ? "s" : ""}. ` +
+      `<b>${data.remaining}</b> left of ${data.limit}. ${tail}`);
   } else {
+    denyActive = true;
     sim.denyFlashUntil = performance.now() + 420;
-    logLine(`<span class="res bad">  ↳ 429 DENIED · bucket empty · retry after ${ms(data.retryAfterMs)}</span>`);
+    logLine(`<span class="res bad">  ↳ 429 DENIED · no allowance left · retry after ${ms(data.retryAfterMs)}</span>`);
     narrate("bad",
-      `⛔ <b>DENIED (429).</b> Bucket empty — needed ${cost}, had fewer. ` +
-      `Wait ~<b>${ms(data.retryAfterMs)}</b> for enough tokens to refill.`);
+      `⛔ <b>DENIED (429).</b> Out of allowance — needed ${cost}, had fewer. ` +
+      `Wait ~<b>${ms(data.retryAfterMs)}</b> and it recovers automatically.`);
   }
 }
 function ms(v) { return v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, "") + "s" : Math.round(v) + "ms"; }
@@ -183,11 +228,26 @@ $("burst").onclick = async () => {
 $("reset").onclick = () => {
   sim.actual = sim.cap = cfg.capacity;
   sim.display = sim.actual;
+  sim.windowReset = 0;
+  clearDeny();
   $("log").innerHTML = "";
   sent = ok = bad = 0;
   $("statSent").textContent = $("statOk").textContent = $("statBad").textContent = "0";
   narrate("", `view reset. <span class="dim">(server-side buckets keep refilling on their own.)</span>`);
 };
+
+/* ---- terminal window chrome: minimize / close / maximize ---- */
+const appEl = $("app");
+function minimizeApp() { appEl.classList.add("minimized"); $("launcher").hidden = false; endTour(); }
+function restoreApp() { appEl.classList.remove("minimized"); $("launcher").hidden = true; }
+function toggleMax() { appEl.classList.toggle("maximized"); requestAnimationFrame(positionTour); }
+$("winMin").onclick = minimizeApp;
+$("winClose").onclick = minimizeApp;   // single-page app: "close" parks it as an icon too
+$("winMax").onclick = toggleMax;
+$("launcher").onclick = restoreApp;
+
+/* ---- request log show / hide ---- */
+$("logBtn").onclick = () => $("grid").classList.toggle("no-log");
 
 let autoTimer = null;
 $("auto").onclick = () => {

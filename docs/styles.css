@@ -64,6 +64,13 @@ b { color: var(--text); font-weight: 700; }
 .dot.amber { background: var(--amber); }
 .dot.green { background: var(--green); }
 .dot.pulse { animation: pulse 1.2s ease-in-out infinite; }
+/* the traffic-light dots are real controls */
+button.dot {
+  padding: 0; border: none; cursor: pointer;
+  transition: transform .1s, filter .1s;
+}
+button.dot:hover { transform: scale(1.18); filter: brightness(1.2); }
+button.dot:active { transform: scale(.92); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 .term-title {
   margin-left: 6px;
@@ -295,6 +302,49 @@ input[type="range"] { flex: 1; accent-color: var(--cyan); height: 4px; }
 .tour-dots span.on { background: var(--cyan); box-shadow: 0 0 7px var(--cyan); }
 .tour-acts { display: flex; gap: 7px; }
 .tour-acts .btn.tiny { padding: 5px 11px; font-size: 12px; }
+
+/* ---------------- window controls: maximize / minimize / log toggle ---------------- */
+.app.maximized {
+  position: fixed; inset: 0; z-index: 40;
+  border-radius: 0; border: none;
+  box-shadow: none;
+}
+.app.maximized .term-body.grid { min-height: calc(100vh - 45px); }
+.app.minimized { display: none; }
+
+/* hide the log column and reclaim its space */
+.term-body.grid.no-log { grid-template-columns: 286px 1fr; }
+.term-body.grid.no-log .logwrap { display: none; }
+@media (max-width: 1040px) {
+  .term-body.grid.no-log { grid-template-columns: 1fr; }
+}
+
+/* launcher icon shown while minimized/closed */
+.launcher {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 60;
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font);
+  background: linear-gradient(180deg, #0b0d11, #07090c);
+  color: var(--text);
+  border: 1px solid var(--border-hi);
+  border-radius: 16px;
+  padding: 18px 22px;
+  cursor: pointer;
+  box-shadow: 0 30px 70px -20px #000, 0 0 50px -18px var(--cyan);
+  transition: transform .12s, box-shadow .15s, border-color .15s;
+}
+.launcher:hover { transform: translate(-50%, -50%) scale(1.04); border-color: var(--cyan); box-shadow: 0 30px 70px -16px #000, 0 0 64px -14px var(--cyan); }
+.launcher-icon {
+  display: grid; place-items: center;
+  width: 52px; height: 52px; border-radius: 13px;
+  background: radial-gradient(circle at 30% 25%, #123, #06080b);
+  border: 1px solid var(--border-hi);
+  color: var(--green); font-weight: 700; font-size: 22px;
+  box-shadow: inset 0 0 22px -8px var(--green);
+}
+.launcher-text { display: flex; flex-direction: column; align-items: flex-start; font-size: 14px; font-weight: 700; }
+.launcher-text small { color: var(--dim); font-weight: 400; font-size: 11px; margin-top: 3px; }
 
 /* ---------------- responsive ---------------- */
 @media (max-width: 1040px) {

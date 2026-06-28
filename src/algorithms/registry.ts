@@ -1,5 +1,8 @@
 import { RateLimitAlgorithm } from "./types";
 import { TokenBucketAlgorithm } from "./tokenBucket";
+import { LeakyBucketAlgorithm } from "./leakyBucket";
+import { FixedWindowAlgorithm } from "./fixedWindow";
+import { SlidingWindowAlgorithm } from "./slidingWindow";
 
 /**
  * Algorithm registry.
@@ -32,3 +35,6 @@ export function listAlgorithms(): string[] {
 
 // --- Built-in algorithms ---
 registerAlgorithm(new TokenBucketAlgorithm());
+registerAlgorithm(new LeakyBucketAlgorithm());
+registerAlgorithm(new FixedWindowAlgorithm());
+registerAlgorithm(new SlidingWindowAlgorithm());

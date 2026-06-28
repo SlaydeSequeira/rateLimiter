@@ -14,16 +14,19 @@
   <!-- ============================ Main terminal ============================ -->
   <main class="term app" id="app">
     <div class="term-bar">
-      <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+      <button class="dot red" id="winClose" title="close"></button>
+      <button class="dot amber" id="winMin" title="minimize"></button>
+      <button class="dot green" id="winMax" title="maximize / restore"></button>
       <span class="term-title">slayde@rate-limit-service: ~</span>
       <span class="status-pill" id="statusPill">
         <span id="warmDot" class="dot amber pulse"></span>
         <span id="warmText">connecting…</span>
       </span>
+      <button id="logBtn" class="btn ghost tiny" title="Show / hide the request log">▤ log</button>
       <button id="helpBtn" class="btn ghost tiny" title="Replay the tour">? tour</button>
     </div>
 
-    <div class="term-body grid">
+    <div class="term-body grid" id="grid">
 
       <!-- ---------- Left: configuration ---------- -->
       <section class="panel config">
@@ -33,9 +36,9 @@
           <span class="lbl">algorithm</span>
           <select id="algo">
             <option value="token_bucket" selected>token_bucket</option>
-            <option value="sliding_window" disabled>sliding_window — coming soon</option>
-            <option value="leaky_bucket" disabled>leaky_bucket — coming soon</option>
-            <option value="fixed_window" disabled>fixed_window — coming soon</option>
+            <option value="leaky_bucket">leaky_bucket</option>
+            <option value="fixed_window">fixed_window</option>
+            <option value="sliding_window">sliding_window</option>
           </select>
         </label>
 
@@ -109,6 +112,12 @@
 
     </div>
   </main>
+
+  <!-- shown when the terminal is minimized/closed; click to reopen -->
+  <button id="launcher" class="launcher" hidden>
+    <span class="launcher-icon">&gt;_</span>
+    <span class="launcher-text">rate-limit-service<small>click to reopen</small></span>
+  </button>
 
   <script src="app.js"></script>
 </body>

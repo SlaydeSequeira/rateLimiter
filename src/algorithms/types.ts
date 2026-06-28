@@ -12,11 +12,14 @@
  *  fields are algorithm-specific. New algorithms can read their own keys. */
 export interface AlgorithmConfig {
   algorithm: string;
-  // token_bucket
+  // token_bucket / leaky_bucket
   capacity?: number;
   refillRatePerSec?: number;
-  // open-ended so future algorithms (sliding window, leaky bucket, ...) can
-  // carry their own params without changing this type.
+  // fixed_window / sliding_window
+  limit?: number;
+  windowSec?: number;
+  // open-ended so future algorithms can carry their own params without
+  // changing this type.
   [key: string]: unknown;
 }
 

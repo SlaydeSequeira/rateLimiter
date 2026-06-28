@@ -1,0 +1,19 @@
+{
+  "default": {
+    "algorithm": "token_bucket",
+    "capacity": 60,
+    "refillRatePerSec": 1
+  },
+  "clients": {
+    "demo-client": {
+      "algorithm": "token_bucket",
+      "capacity": 5,
+      "refillRatePerSec": 0.5
+    },
+    "premium-client": {
+      "algorithm": "token_bucket",
+      "capacity": 1000,
+      "refillRatePerSec": 50
+    }
+  }
+}

@@ -1,0 +1,24 @@
+# Render Blueprint. Push this repo and Render will detect this file
+# (New + > Blueprint) and provision the service automatically.
+services:
+  - type: web
+    name: rate-limit-service
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20.11.1"
+      # Auto-generates a secret callers must pass as `x-api-key`.
+      # Delete this block (and the API_KEY check) to run open/unauthenticated.
+      - key: API_KEY
+        generateValue: true
+      # To enable a shared Redis store across instances, create a Render
+      # Key Value (Redis) instance and wire its URL here, e.g.:
+      # - key: REDIS_URL
+      #   fromService:
+      #     name: rate-limit-redis
+      #     type: keyvalue
+      #     property: connectionString

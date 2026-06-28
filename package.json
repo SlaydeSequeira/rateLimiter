@@ -1,0 +1,28 @@
+{
+  "name": "rate-limit-service",
+  "version": "1.0.0",
+  "description": "Generic, pluggable rate-limiting microservice. Token bucket by default, designed so new algorithms and stores can be added without touching callers.",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "test": "npm run build && node --test dist/algorithms/tokenBucket.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "optionalDependencies": {
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.30",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "license": "MIT"
+}
